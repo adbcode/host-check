@@ -1,0 +1,12 @@
+name: host-check
+channels:
+  - defaults
+dependencies:
+  - python=3
+  - pip
+  - numpy
+  - pandas
+  - jupyter
+  - scikit-learn
+  - matplotlib
+  - seaborn
