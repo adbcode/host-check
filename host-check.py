@@ -32,3 +32,30 @@ print (malware_pd[malware_pd['hostname'].isin(alexa['hostname'])].size)
 print (malware_pd[malware_pd['hostname'].isin(cisco['hostname'])].size)
 
 # %%
+#split hostnames by period into a list
+#remove/extract "stop" words (e.g. www?, tld)
+
+#%%
+tld_series = pd.read_csv('resources/tld_list.txt', names=['TLD'], squeeze=True)
+print(tld_series.size)
+
+# %%
+# Source for tld_list.txt: https://github.com/lucasayres/url-feature-extractor/blob/master/lib/files/tlds.txt
+def extract_tld(hostname):
+    tld_list = [tld for tld in tld_series if tld in hostname]
+    return tld_list, len(tld_list)
+
+# function needs work as it is getting undesirable results
+print(extract_tld('www.google.co.in'))
+
+# %%
+def url_mapper(hostname):
+    period_count = count(hostname, '.')
+    hypen_count = count(hostname, '-')
+    underscore_count = count(hostname, '_')
+    hostname_length = len(hostname)
+
+    return None
+
+# %%
+# df['a'], df['b], .. df['z'] = zip(df['x].map(url_mapper))
