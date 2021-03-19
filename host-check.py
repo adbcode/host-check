@@ -36,25 +36,34 @@ print (malware_pd[malware_pd['hostname'].isin(cisco['hostname'])].size)
 #remove/extract "stop" words (e.g. www?, tld)
 
 #%%
-tld_series = pd.read_csv('resources/tld_list.txt', names=['TLD'], squeeze=True)
+tld_series = pd.read_csv('resources/tld_list.txt', names=['TLD'], squeeze=True, skip_blank_lines=True, comment='/')
 print(tld_series.size)
 
 # %%
-# Source for tld_list.txt: https://github.com/lucasayres/url-feature-extractor/blob/master/lib/files/tlds.txt
+# Source for tld_list.txt: https://publicsuffix.org/list/
 def extract_tld(hostname):
-    tld_list = [tld for tld in tld_series if tld in hostname]
-    return tld_list, len(tld_list)
+    tld_list = [tld for tld in tld_series if hostname.endswith(tld)]
+    return sorted(tld_list, key=len, reverse=True)[0]
 
-# function needs work as it is getting undesirable results
+# demo
 print(extract_tld('www.google.co.in'))
 
 # %%
+# mapper inspired (and optimized) by: https://github.com/lucasayres/url-feature-extractor
+vowels = ['a', 'e', 'i', 'o', 'u']
+
 def url_mapper(hostname):
     period_count = count(hostname, '.')
     hypen_count = count(hostname, '-')
     underscore_count = count(hostname, '_')
+    digit_count = sum(char.isdigit() for char in hostname)
     hostname_length = len(hostname)
-
+    tld = extract_tld(hostname)
+    vowel_count = len([letter for letter in hostname if letter in vowels])
+    server_exists = "server" in hostname.lower()
+    client_exists = "client" in hostname.lower()
+    hostname_split = hostname.removesuffix(tld).split('.')[:-1]
+    # entropy???
     return None
 
 # %%
