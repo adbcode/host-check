@@ -1,6 +1,7 @@
 # %%
 import numpy as np
 import pandas as pd
+import multiprocessing as mp
 from sklearn.model_selection import train_test_split
 
 #%%
@@ -106,13 +107,16 @@ malware_pd['malicious'] = True
 
 df = alexa.append(malware_pd)
 df = df.reset_index(drop=True)
-
 print(df.size)
-print(df.head())
-print(df.tail())
 
 # %%
-df['period_count'],df['hypen_count'],df['underscore_count'],df['digit_count'],df['hostname_length'],df['tld'],df['hostname_without_tld'],df['vowel_count'],df['server_exists'],df['client_exists'],df['hostname_split'] = zip(*df['hostname'].map(url_mapper))
+# with mp.Pool(mp.cpu_count()/2) as pool:
+#     df['period_count'],df['hypen_count'],df['underscore_count'],df['digit_count'],df['hostname_length'],df['tld'],df['hostname_without_tld'],df['vowel_count'],df['server_exists'],df['client_exists'],df['hostname_split'] = zip(*pool.map(url_mapper, df['hostname']))
+# print(df.head())
+
+# %%
+# df.to_pickle('resources/df_mapped.pickle')
+df = pd.read_pickle('resources/df_mapped.pickle')
 print(df.head())
 
 # %%
