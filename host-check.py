@@ -157,7 +157,7 @@ print(df.shape)
 # %%
 alphabet_list = [char for char in string.ascii_lowercase]
 digit_list = [digits for digits in string.digits]
-character_list = alphabet_list + character_list
+character_list = alphabet_list + digit_list
 
 # df['hostname_length'] = df['hostname'].apply(lambda x: len(x))
 # df['tld'] = df['hostname'].apply(extract_tld)
@@ -179,7 +179,6 @@ character_list = alphabet_list + character_list
 # df['alphabet_count'] = df[['count-'+alphabet for alphabet in alphabet_list]].sum(axis=1)
 
 # print(df.head())
-'''
 
 # %%
 # df.to_pickle('resources/df_mapped.pickle')
@@ -200,9 +199,6 @@ print (X_train.shape, X_test.shape)
 
 # %%
 print(X_train.isnull().mean().sort_values(ascending=False))
-
-# %%
-print(X_train.mean().sort_values(ascending=False))
 
 # %%
 print(X_train['tld'].value_counts)
@@ -226,13 +222,15 @@ def calculate_iqr(column):
 # %%
 # hostname_length vowel_count count-period count-hyphen count-underscore digit_count alphabet_count
 scale_list = ['hostname_length','vowel_count','count-period','alphabet_count']
+X_train.boxplot(column=scale_list)
+
+# %%
 for column in scale_list:
     print(column)
     floor,ceiling=calculate_iqr(X_train[column])
     print(floor,ceiling)
-    X_train[column]=np.where(X_train.loc[column]>ceiling,ceiling,X_train[column])
+    X_train[column]=np.where(X_train[column]>ceiling,ceiling,X_train[column])
     X_train[column]=np.where(X_train[column]<floor,floor,X_train[column])
-
+    
 print(X_train[scale_list].describe())
-
-# %%
+X_train.boxplot(column=scale_list)
