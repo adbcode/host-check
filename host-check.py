@@ -12,8 +12,10 @@ pd.set_option('display.max_columns', 100)
 pd.set_option('display.max_rows', 20)
 
 #%%
+'''
 alexa = pd.read_csv('train/top-1m-alexa-210307.csv', usecols=[1], names=['hostname'])
 print(alexa.head())
+'''
 
 # %%
 # cisco = pd.read_csv('train/top-1m-cisco-210307.csv', usecols=[1], names=['hostname'])
@@ -23,35 +25,43 @@ print(alexa.head())
 #print (alexa[alexa['hostname'].isin(cisco['hostname'])].size)
 
 # %%
+'''
 malware_pd = pd.read_csv('train\hosts-210311.txt', delim_whitespace=True, usecols=[1], names=['hostname'], skiprows=39, skipfooter=11)
+'''
 # print(malware_pd.size)
 # print(malware_pd.head())
 #print(malware_pd.tail())
 
 # %%
 # find count of hostnames matching across list
+'''
 print (malware_pd[malware_pd['hostname'].isin(alexa['hostname'])].size)
+'''
 #print (malware_pd[malware_pd['hostname'].isin(cisco['hostname'])].size)
 
 # %%
+'''
 print (malware_pd.shape)
 malware_pd = malware_pd[malware_pd['hostname'].str.count('.') > 0]
 print (malware_pd.shape)
-
+'''
 # print (alexa.size)
 # alexa = alexa[alexa['hostname'].str.count('.') > 0]
 # print (alexa.size)
 
 # %%
+'''
 malware_pd['hostname'] = malware_pd['hostname'].str.lower()
 alexa['hostname'] = alexa['hostname'].str.lower()
+'''
 
 # %%
 #split hostnames by period into a list
 #remove/extract "stop" words (e.g. www?, tld)
-
+'''
 malware_pd['hostname'] = malware_pd['hostname'].str.lstrip('www.')
 alexa['hostname'] = alexa['hostname'].str.lstrip('www.')
+'''
 # cisco['hostname-stripped'] = cisco['hostname'].str.lstrip('www.')
 
 # print (malware_pd[malware_pd['hostname-stripped'].isin(alexa['hostname-stripped'])].size)
@@ -62,8 +72,10 @@ alexa['hostname'] = alexa['hostname'].str.lstrip('www.')
 # print (cisco[cisco['hostname'].isin(alexa['hostname'])].size)
 
 #%%
+'''
 tld_series = pd.read_csv('resources/tld_list.txt', names=['TLD'], squeeze=True, skip_blank_lines=True, comment='/')
 print(tld_series.shape)
+'''
 
 # %%
 # Source for tld_list.txt: https://publicsuffix.org/list/
@@ -85,9 +97,11 @@ def shannon_entropy(hostname_without_tld):
     return entropy
 
 # %%
+
 # mapper inspired (and optimized) by: https://github.com/lucasayres/url-feature-extractor
 vowels = ['a', 'e', 'i', 'o', 'u']
 # counter = 0
+
 
 def hostname_mapper(hostname):
     # global counter
@@ -109,11 +123,13 @@ def hostname_mapper(hostname):
     # counter += 1
     return period_count,hypen_count,underscore_count,digit_count,alphabet_count,hostname_length,tld,hostname_without_tld,vowel_count,server_exists,client_exists,hostname_split,hostname_shannon
 
+
 # %%
 # print(hostname_mapper('maps.google.com'))
 
 # %%
 # df['a'], df['b], .. df['z'] = zip(df['x].map(url_mapper))
+'''
 print(alexa.size)
 alexa = alexa[~alexa['hostname'].isin(malware_pd['hostname'])]
 print(alexa.shape)
@@ -121,14 +137,17 @@ print(alexa.shape)
 non_malicious_limit = 100000
 alexa = alexa[:non_malicious_limit]
 print(alexa.shape)
+'''
 
 # %%
+'''
 alexa['malicious'] = False
 malware_pd['malicious'] = True
 
 df = alexa.append(malware_pd)
 df = df.reset_index(drop=True)
 print(df.shape)
+'''
 
 # %%
 # with mp.Pool(mp.cpu_count()) as pool:
@@ -160,6 +179,7 @@ character_list = alphabet_list + character_list
 # df['alphabet_count'] = df[['count-'+alphabet for alphabet in alphabet_list]].sum(axis=1)
 
 # print(df.head())
+'''
 
 # %%
 # df.to_pickle('resources/df_mapped.pickle')
