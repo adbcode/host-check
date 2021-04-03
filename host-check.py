@@ -5,11 +5,12 @@ import numpy as np
 import pandas as pd
 import string
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 
 # %%
 # config
-pd.set_option('display.max_columns', 100)
-pd.set_option('display.max_rows', 20)
+pd.set_option('display.max_columns', 50)
+pd.set_option('display.max_rows', 50)
 
 #%%
 '''
@@ -208,7 +209,7 @@ print(X_train.describe())
 
 # %%
 # count-period has a wide range
-X_train.boxplot(column=['count-period'])
+X_train.boxplot(column=['count-period', grid=False])
 
 # %%
 def calculate_iqr(column):
@@ -222,7 +223,7 @@ def calculate_iqr(column):
 # %%
 # hostname_length vowel_count count-period count-hyphen count-underscore digit_count alphabet_count
 scale_list = ['hostname_length','vowel_count','count-period','alphabet_count']
-X_train.boxplot(column=scale_list)
+X_train.boxplot(column=scale_list, grid=False, rot=45)
 
 # %%
 for column in scale_list:
@@ -231,6 +232,44 @@ for column in scale_list:
     print(floor,ceiling)
     X_train[column]=np.where(X_train[column]>ceiling,ceiling,X_train[column])
     X_train[column]=np.where(X_train[column]<floor,floor,X_train[column])
+    X_test[column]=np.where(X_test[column]>ceiling,ceiling,X_test[column])
+    X_test[column]=np.where(X_test[column]<floor,floor,X_test[column])
     
 print(X_train[scale_list].describe())
-X_train.boxplot(column=scale_list)
+X_train.boxplot(column=scale_list, grid=False, rot=45, fontsize=4)
+
+# %%
+numeric_columns = X_train.columns[X_train.dtypes.apply(lambda c: np.issubdtype(c, np.number))]
+scaler = MinMaxScaler()
+scaler.fit(X_train[numeric_columns])
+X_train[numeric_columns] = scaler.transform(X_train[numeric_columns])
+X_test[numeric_columns] = scaler.transform(X_test[numeric_columns])
+
+# %%
+X_train[numeric_columns].boxplot(grid=False, rot=45, fontsize=4)
+
+# %%
+print(X_train.describe())
+
+# %%
+print(X_train.corr())
+
+# %%
+print(X_train.corrwith(y_train).sort_values(key=abs, ascending=False))
+
+# %%
+# remove count-period, alphabet_count as they have very high correlation with other features
+# remove count-b, count-h, count-u, client_exists, count-underscore, count-q as very less correlation with target
+high_feature_correlation_list = ['count-period', 'alphabet_count']
+low_target_correlation_list = ['count-b', 'count-h', 'count-u', 'client_exists', 'count-underscore', 'count-q']
+feature_drop_list = high_feature_correlation_list + low_target_correlation_list
+
+X_train = X_train.drop(feature_drop_list, axis=1)
+X_test = X_test.drop(feature_drop_list, axis=1)
+
+print(X_train.shape)
+
+# %%
+X_train.boxplot(grid=False, rot=45, fontsize=4)
+
+# %%
