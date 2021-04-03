@@ -273,3 +273,17 @@ print(X_train.shape)
 X_train.boxplot(grid=False, rot=45, fontsize=4)
 
 # %%
+# Classification suite
+#   Logistic Regression
+#   Naïve Bayes
+#   K-Nearest Neighbours
+#   Random Forest
+#   Support Vector Machine
+
+
+# %%
+# Evaluation metrics
+#   Classification accuracy
+#   Confusion matrix => Precision and recall; Sensitivity and Specificity
+#   F1 score
+#   ROC curve and AUC
