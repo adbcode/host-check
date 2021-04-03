@@ -4,7 +4,14 @@ import multiprocessing as mp
 import numpy as np
 import pandas as pd
 import string
+
+from sklearn.dummy import DummyClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import MinMaxScaler
 
 # %%
@@ -209,7 +216,7 @@ print(X_train.describe())
 
 # %%
 # count-period has a wide range
-X_train.boxplot(column=['count-period', grid=False])
+X_train.boxplot(column=['count-period'], grid=False)
 
 # %%
 def calculate_iqr(column):
@@ -273,17 +280,34 @@ print(X_train.shape)
 X_train.boxplot(grid=False, rot=45, fontsize=4)
 
 # %%
-# Classification suite
-#   Logistic Regression
-#   Naïve Bayes
-#   K-Nearest Neighbours
-#   Random Forest
-#   Support Vector Machine
+# Classification suite - early evaluation
+#   Dummy classifier for baseline (very fast)
+#   Logistic Regression  (slow)
+#   Naïve Bayes (fast)
+#   K-Nearest Neighbours (slow)
+#   Random Forest (fast)
+#   Stochastic Gradient Descent (fast)
 
+dummy = DummyClassifier(random_state=42)
+logistic = LogisticRegression(n_jobs=-1, random_state=42)
+nbc = MultinomialNB()
+knn = KNeighborsClassifier(n_jobs=-1)
+random_forest = RandomForestClassifier(n_jobs=-1)
+sgd = SGDClassifier(random_state=42, n_jobs=-1)
+
+train_test_features = X_train.columns[X_train.dtypes.apply(lambda c: np.issubdtype(c, np.number))]
+
+classifier_suite = [dummy, logistic, nbc, knn, random_forest, sgd]
+
+# for model in classifier_suite:
+#     model.fit(X_train[train_test_features], y_train)
+#     print(model.__class__.__name__ + " score: " + str(model.score(X_test[train_test_features], y_test)))
+
+# Choosing RandomForestClassifier and SGDClassifier for model tuning and further testing
 
 # %%
 # Evaluation metrics
-#   Classification accuracy
+#   Classification accuracy vs Dummy Classifier
 #   Confusion matrix => Precision and recall; Sensitivity and Specificity
 #   F1 score
 #   ROC curve and AUC
