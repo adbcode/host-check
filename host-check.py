@@ -5,13 +5,13 @@ import numpy as np
 import pandas as pd
 import string
 
-from sklearn.dummy import DummyClassifier
-from sklearn.ensemble import RandomForestClassifier
+# from sklearn.dummy import DummyClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from sklearn.linear_model import LogisticRegression, SGDClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import f1_score
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.metrics import classification_report, confusion_matrix, f1_score
+# from sklearn.naive_bayes import MultinomialNB
+# from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import MinMaxScaler
 
 # %%
@@ -216,7 +216,7 @@ print(X_train.describe())
 
 # %%
 # count-period has a wide range
-X_train.boxplot(column=['count-period'], grid=False)
+'''X_train.boxplot(column=['count-period'], grid=False)'''
 
 # %%
 def calculate_iqr(column):
@@ -230,7 +230,7 @@ def calculate_iqr(column):
 # %%
 # hostname_length vowel_count count-period count-hyphen count-underscore digit_count alphabet_count
 scale_list = ['hostname_length','vowel_count','count-period','alphabet_count']
-X_train.boxplot(column=scale_list, grid=False, rot=45)
+'''X_train.boxplot(column=scale_list, grid=False, rot=45)'''
 
 # %%
 for column in scale_list:
@@ -241,9 +241,11 @@ for column in scale_list:
     X_train[column]=np.where(X_train[column]<floor,floor,X_train[column])
     X_test[column]=np.where(X_test[column]>ceiling,ceiling,X_test[column])
     X_test[column]=np.where(X_test[column]<floor,floor,X_test[column])
-    
+
+'''    
 print(X_train[scale_list].describe())
 X_train.boxplot(column=scale_list, grid=False, rot=45, fontsize=4)
+'''
 
 # %%
 numeric_columns = X_train.columns[X_train.dtypes.apply(lambda c: np.issubdtype(c, np.number))]
@@ -252,17 +254,16 @@ scaler.fit(X_train[numeric_columns])
 X_train[numeric_columns] = scaler.transform(X_train[numeric_columns])
 X_test[numeric_columns] = scaler.transform(X_test[numeric_columns])
 
-# %%
+
+'''
 X_train[numeric_columns].boxplot(grid=False, rot=45, fontsize=4)
 
-# %%
 print(X_train.describe())
 
-# %%
 print(X_train.corr())
 
-# %%
 print(X_train.corrwith(y_train).sort_values(key=abs, ascending=False))
+'''
 
 # %%
 # remove count-period, alphabet_count as they have very high correlation with other features
@@ -277,7 +278,7 @@ X_test = X_test.drop(feature_drop_list, axis=1)
 print(X_train.shape)
 
 # %%
-X_train.boxplot(grid=False, rot=45, fontsize=4)
+'''X_train.boxplot(grid=False, rot=45, fontsize=4)'''
 
 # %%
 # Classification suite - early evaluation
@@ -288,26 +289,52 @@ X_train.boxplot(grid=False, rot=45, fontsize=4)
 #   Random Forest (fast)
 #   Stochastic Gradient Descent (fast)
 
+'''
 dummy = DummyClassifier(random_state=42)
 logistic = LogisticRegression(n_jobs=-1, random_state=42)
 nbc = MultinomialNB()
 knn = KNeighborsClassifier(n_jobs=-1)
+'''
 random_forest = RandomForestClassifier(n_jobs=-1)
 sgd = SGDClassifier(random_state=42, n_jobs=-1)
 
 train_test_features = X_train.columns[X_train.dtypes.apply(lambda c: np.issubdtype(c, np.number))]
-
+'''
 classifier_suite = [dummy, logistic, nbc, knn, random_forest, sgd]
 
-# for model in classifier_suite:
-#     model.fit(X_train[train_test_features], y_train)
-#     print(model.__class__.__name__ + " score: " + str(model.score(X_test[train_test_features], y_test)))
+for model in classifier_suite:
+    model.fit(X_train[train_test_features], y_train)
+    print(model.__class__.__name__ + " score: " + str(model.score(X_test[train_test_features], y_test)))
+'''
 
 # Choosing RandomForestClassifier and SGDClassifier for model tuning and further testing
 
 # %%
 # Evaluation metrics
-#   Classification accuracy vs Dummy Classifier
+#   Classification accuracy
 #   Confusion matrix => Precision and recall; Sensitivity and Specificity
 #   F1 score
 #   ROC curve and AUC
+
+# %%
+# RandomForestClassifier
+# random_forest_grid = {'n_estimators': [10, 25, 50, 100, 250], 'max_depth': [5, 8, 15, 30], 'min_samples_leaf': [5, 10, 50, 100]}
+# random_forest_grid = {'n_estimators': [100, 250, 500], 'max_depth': [25, 30, 45, 100], 'min_samples_leaf': [1, 3, 5, 7]}
+#random_forest_grid = {'n_estimators': [400, 500, 600], 'max_depth': [45, 60], 'min_samples_leaf': [3, 5, 6]}
+random_forest_grid = {'n_estimators': [600, 1000], 'max_depth': [60, 150], 'min_samples_leaf': [1, 2]}
+random_forest_gscv = GridSearchCV(RandomForestClassifier(n_jobs=-1, random_state=42), random_forest_grid, n_jobs=-1, verbose=3)
+random_forest_gscv.fit(X_train[train_test_features], y_train)
+
+print(random_forest_gscv.best_params_)
+print('Training accuracy = ' + str(random_forest_gscv.score(X_train[train_test_features], y_train)))
+
+random_forest_best_predictions = random_forest_gscv.predict(X_test[train_test_features])
+print(classification_report(y_test, random_forest_best_predictions))
+
+# to use 'max_depth': 45, 'min_samples_leaf': 1, 'n_estimators': 500
+
+# %%
+# SGDClassifier
+
+# %%
+# VotingClassifier
