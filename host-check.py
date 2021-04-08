@@ -317,12 +317,14 @@ for model in classifier_suite:
 #   ROC curve and AUC
 
 # %%
-# RandomForestClassifier
+# RandomForestClassifier Tuning
 # random_forest_grid = {'n_estimators': [10, 25, 50, 100, 250], 'max_depth': [5, 8, 15, 30], 'min_samples_leaf': [5, 10, 50, 100]}
 # random_forest_grid = {'n_estimators': [100, 250, 500], 'max_depth': [25, 30, 45, 100], 'min_samples_leaf': [1, 3, 5, 7]}
 #random_forest_grid = {'n_estimators': [400, 500, 600], 'max_depth': [45, 60], 'min_samples_leaf': [3, 5, 6]}
-random_forest_grid = {'n_estimators': [600, 1000], 'max_depth': [60, 150], 'min_samples_leaf': [1, 2]}
-random_forest_gscv = GridSearchCV(RandomForestClassifier(n_jobs=-1, random_state=42), random_forest_grid, n_jobs=-1, verbose=3)
+# random_forest_grid = {'n_estimators': [600, 1000], 'max_depth': [60, 150], 'min_samples_leaf': [1, 2]}
+'''
+random_forest_grid = {'n_estimators': [100], 'max_depth': [45], 'min_samples_leaf': [1]}
+random_forest_gscv = GridSearchCV(RandomForestClassifier(n_jobs=-1, random_state=42), random_forest_grid, n_jobs=-1, verbose=3, cv=3)
 random_forest_gscv.fit(X_train[train_test_features], y_train)
 
 print(random_forest_gscv.best_params_)
@@ -330,11 +332,47 @@ print('Training accuracy = ' + str(random_forest_gscv.score(X_train[train_test_f
 
 random_forest_best_predictions = random_forest_gscv.predict(X_test[train_test_features])
 print(classification_report(y_test, random_forest_best_predictions))
-
-# to use 'max_depth': 45, 'min_samples_leaf': 1, 'n_estimators': 500
+'''
+# to use 'max_depth': 45, 'min_samples_leaf': 1, 'n_estimators': 100
 
 # %%
-# SGDClassifier
+# SGDClassifier Tuning
+# sgd_grid = {'alpha': [1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 0.25, 0.50, 0.75, 1.0], 'penalty': ['l1', 'l2']}
+'''
+sgd_grid = {'alpha': [1e-5*i for i in range(1,10)], 'penalty': ['l1', 'l2']}
+sgd_gscv = GridSearchCV(SGDClassifier(n_jobs=-1, random_state=42), sgd_grid, n_jobs=-1, verbose=3)
+sgd_gscv.fit(X_train[train_test_features], y_train)
+
+print(sgd_gscv.best_params_)
+print('Training accuracy = ' + str(sgd_gscv.score(X_train[train_test_features], y_train)))
+
+sgd_best_predictions = sgd_gscv.predict(X_test[train_test_features])
+print(classification_report(y_test, sgd_best_predictions))
+'''
+# using 'alpha': 0.0001, 'penalty': 'l2'
+
+
+# %%
+random_forest = RandomForestClassifier(n_jobs=-1, random_state=42, max_depth=45, min_samples_leaf=1, n_estimators=100)
+random_forest.fit(X_train[train_test_features], y_train)
+random_forest_predictions = random_forest.predict(X_test[train_test_features])
+print(classification_report(y_test, random_forest_predictions))
+
+weights = list(random_forest.feature_importances_)
+random_forest_weight = {train_test_features[i]: weights[i] for i in range(len(weights))}
+for feature in sorted(random_forest_weight, reverse=True, key=lambda dict_key: abs(random_forest_weight[dict_key])):
+    print('Feature: %s, Score: %.5f' % (feature,random_forest_weight[feature]))
+
+# %%
+sgd = SGDClassifier(n_jobs=-1, random_state=42, alpha=1e-4, penalty='l2')
+sgd.fit(X_train[train_test_features], y_train)
+sgd_predictions = sgd.predict(X_test[train_test_features])
+print(classification_report(y_test, sgd_predictions))
+
+weights = list(sgd.coef_[0])
+sgd_weight = {train_test_features[i]: weights[i] for i in range(len(weights))}
+for feature in sorted(sgd_weight, reverse=True, key=lambda dict_key: abs(sgd_weight[dict_key])):
+    print('Feature: %s, Score: %.5f' % (feature,sgd_weight[feature]))
 
 # %%
 # VotingClassifier
