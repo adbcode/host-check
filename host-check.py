@@ -6,6 +6,7 @@ import pandas as pd
 import string
 
 # from sklearn.dummy import DummyClassifier
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.model_selection import GridSearchCV, train_test_split
@@ -294,10 +295,9 @@ dummy = DummyClassifier(random_state=42)
 logistic = LogisticRegression(n_jobs=-1, random_state=42)
 nbc = MultinomialNB()
 knn = KNeighborsClassifier(n_jobs=-1)
-'''
 random_forest = RandomForestClassifier(n_jobs=-1)
 sgd = SGDClassifier(random_state=42, n_jobs=-1)
-
+'''
 train_test_features = X_train.columns[X_train.dtypes.apply(lambda c: np.issubdtype(c, np.number))]
 '''
 classifier_suite = [dummy, logistic, nbc, knn, random_forest, sgd]
@@ -360,8 +360,8 @@ print(classification_report(y_test, random_forest_predictions))
 
 weights = list(random_forest.feature_importances_)
 random_forest_weight = {train_test_features[i]: weights[i] for i in range(len(weights))}
-for feature in sorted(random_forest_weight, reverse=True, key=lambda dict_key: abs(random_forest_weight[dict_key])):
-    print('Feature: %s, Score: %.5f' % (feature,random_forest_weight[feature]))
+#for feature in sorted(random_forest_weight, reverse=True, key=lambda dict_key: abs(random_forest_weight[dict_key])):
+#    print('Feature: %s, Score: %.5f' % (feature,random_forest_weight[feature]))
 
 # %%
 sgd = SGDClassifier(n_jobs=-1, random_state=42, alpha=1e-4, penalty='l2')
@@ -371,8 +371,22 @@ print(classification_report(y_test, sgd_predictions))
 
 weights = list(sgd.coef_[0])
 sgd_weight = {train_test_features[i]: weights[i] for i in range(len(weights))}
-for feature in sorted(sgd_weight, reverse=True, key=lambda dict_key: abs(sgd_weight[dict_key])):
-    print('Feature: %s, Score: %.5f' % (feature,sgd_weight[feature]))
+#for feature in sorted(sgd_weight, reverse=True, key=lambda dict_key: abs(sgd_weight[dict_key])):
+#    print('Feature: %s, Score: %.5f' % (feature,sgd_weight[feature]))
+
+# %%
+# calibrate sgd for use in votingclassifier
+sgd_calibrate = CalibratedClassifierCV(sgd, n_jobs=-1)
+sgd_calibrated = sgd_calibrate.fit(X_train[train_test_features], y_train)
 
 # %%
 # VotingClassifier
+voting_classifier = VotingClassifier(estimators=[('random_forest', random_forest), ('sgd', sgd_calibrated)], voting='soft', n_jobs=-1, weights=[0.84, 0.73])
+voting_classifier.fit(X_train[train_test_features], y_train)
+voting_predictions = voting_classifier.predict(X_test[train_test_features])
+print(classification_report(y_test, voting_predictions))
+print('% non-matching between voting and SGD: ' + str((voting_predictions != sgd_predictions).mean()*100))
+print('% non-matching between voting and random forest: ' + str((voting_predictions != random_forest_predictions).mean()*100))
+print('% non-matching between random forest and SGD: ' + str((random_forest_predictions != sgd_predictions).mean()*100))
+
+# %%
