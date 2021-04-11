@@ -5,14 +5,14 @@ import numpy as np
 import pandas as pd
 import string
 
-# from sklearn.dummy import DummyClassifier
+from sklearn.dummy import DummyClassifier
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, f1_score
-# from sklearn.naive_bayes import MultinomialNB
-# from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import MinMaxScaler
 
 # %%
@@ -360,10 +360,11 @@ print(classification_report(y_test, random_forest_predictions))
 
 weights = list(random_forest.feature_importances_)
 random_forest_weight = {train_test_features[i]: weights[i] for i in range(len(weights))}
-#for feature in sorted(random_forest_weight, reverse=True, key=lambda dict_key: abs(random_forest_weight[dict_key])):
-#    print('Feature: %s, Score: %.5f' % (feature,random_forest_weight[feature]))
+for feature in sorted(random_forest_weight, reverse=True, key=lambda dict_key: abs(random_forest_weight[dict_key])):
+   print('Feature: %s, Score: %.5f' % (feature,random_forest_weight[feature]))
 
 # %%
+'''
 sgd = SGDClassifier(n_jobs=-1, random_state=42, alpha=1e-4, penalty='l2')
 sgd.fit(X_train[train_test_features], y_train)
 sgd_predictions = sgd.predict(X_test[train_test_features])
@@ -371,16 +372,18 @@ print(classification_report(y_test, sgd_predictions))
 
 weights = list(sgd.coef_[0])
 sgd_weight = {train_test_features[i]: weights[i] for i in range(len(weights))}
-#for feature in sorted(sgd_weight, reverse=True, key=lambda dict_key: abs(sgd_weight[dict_key])):
-#    print('Feature: %s, Score: %.5f' % (feature,sgd_weight[feature]))
-
+for feature in sorted(sgd_weight, reverse=True, key=lambda dict_key: abs(sgd_weight[dict_key])):
+    print('Feature: %s, Score: %.5f' % (feature,sgd_weight[feature]))
+'''
 # %%
 # calibrate sgd for use in votingclassifier
+'''
 sgd_calibrate = CalibratedClassifierCV(sgd, n_jobs=-1)
 sgd_calibrated = sgd_calibrate.fit(X_train[train_test_features], y_train)
-
+'''
 # %%
 # VotingClassifier
+'''
 voting_classifier = VotingClassifier(estimators=[('random_forest', random_forest), ('sgd', sgd_calibrated)], voting='soft', n_jobs=-1, weights=[0.84, 0.73])
 voting_classifier.fit(X_train[train_test_features], y_train)
 voting_predictions = voting_classifier.predict(X_test[train_test_features])
@@ -388,5 +391,49 @@ print(classification_report(y_test, voting_predictions))
 print('% non-matching between voting and SGD: ' + str((voting_predictions != sgd_predictions).mean()*100))
 print('% non-matching between voting and random forest: ' + str((voting_predictions != random_forest_predictions).mean()*100))
 print('% non-matching between random forest and SGD: ' + str((random_forest_predictions != sgd_predictions).mean()*100))
+'''
+# %%
+# further optimization for random_forest
+random_forest_features = [feature for feature in random_forest_weight if random_forest_weight[feature] >= 0.01]
+print(random_forest_features)
+
+# %%
+# Redoing tuning in-depth using fewer features
+random_forest_grid = {'n_estimators': [100],
+                        'min_samples_leaf': [1, 0.005, 0.05, 0.10],
+                        'class_weight': [None, 'balanced'],
+                        'max_features': ['auto', 'sqrt', 'log2'],
+                        'max_depth': [8, 45],
+                        'min_samples_split': [0.005, 0.05, 0.10],
+                        'criterion' :['gini', 'entropy']
+                        }
+random_forest_gscv = GridSearchCV(RandomForestClassifier(n_jobs=-1, random_state=42), random_forest_grid, n_jobs=-1, verbose=3, cv=2)
+random_forest_gscv.fit(X_train[random_forest_features], y_train)
+
+print(random_forest_gscv.best_params_)
+print('Training accuracy = ' + str(random_forest_gscv.score(X_train[random_forest_features], y_train)))
+
+random_forest_best_predictions = random_forest_gscv.predict(X_test[random_forest_features])
+print(classification_report(y_test, random_forest_best_predictions))
+
+# result 'class_weight': None, 'criterion': 'entropy', 'max_depth': 45, 'max_features': 'auto', 'min_samples_leaf': 1, 'min_samples_split': 0.005, 'n_estimators': 100
+# worse performance than found earlier!
+
+# %%
+random_forest = RandomForestClassifier(n_jobs=-1,
+                                        random_state=42,
+                                        max_depth=45,
+                                        min_samples_leaf=1,
+                                        n_estimators=100,
+                                        class_weight=None,
+                                        criterion='entropy',
+                                        max_features='auto',
+                                        min_samples_split=0.005
+                                        )
+random_forest.fit(X_train[train_test_features], y_train)
+random_forest_predictions = random_forest.predict(X_test[train_test_features])
+print(classification_report(y_test, random_forest_predictions))
+
+# losing features was not the problem. what we have before is as good as it gets
 
 # %%
