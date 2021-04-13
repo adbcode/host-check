@@ -3,6 +3,7 @@ import math
 import multiprocessing as mp
 import numpy as np
 import pandas as pd
+import pickle
 import string
 
 from sklearn.dummy import DummyClassifier
@@ -360,8 +361,11 @@ print(classification_report(y_test, random_forest_predictions))
 
 weights = list(random_forest.feature_importances_)
 random_forest_weight = {train_test_features[i]: weights[i] for i in range(len(weights))}
-for feature in sorted(random_forest_weight, reverse=True, key=lambda dict_key: abs(random_forest_weight[dict_key])):
-   print('Feature: %s, Score: %.5f' % (feature,random_forest_weight[feature]))
+# for feature in sorted(random_forest_weight, reverse=True, key=lambda dict_key: abs(random_forest_weight[dict_key])):
+#    print('Feature: %s, Score: %.5f' % (feature,random_forest_weight[feature]))
+
+df_weight = pd.Series(random_forest_weight)
+print(df_weight.sort_values(ascending=False).plot(kind='barh', fontsize=4))
 
 # %%
 '''
@@ -399,6 +403,7 @@ print(random_forest_features)
 
 # %%
 # Redoing tuning in-depth using fewer features
+'''
 random_forest_grid = {'n_estimators': [100],
                         'min_samples_leaf': [1, 0.005, 0.05, 0.10],
                         'class_weight': [None, 'balanced'],
@@ -415,25 +420,54 @@ print('Training accuracy = ' + str(random_forest_gscv.score(X_train[random_fores
 
 random_forest_best_predictions = random_forest_gscv.predict(X_test[random_forest_features])
 print(classification_report(y_test, random_forest_best_predictions))
+'''
 
 # result 'class_weight': None, 'criterion': 'entropy', 'max_depth': 45, 'max_features': 'auto', 'min_samples_leaf': 1, 'min_samples_split': 0.005, 'n_estimators': 100
 # worse performance than found earlier!
 
 # %%
-random_forest = RandomForestClassifier(n_jobs=-1,
-                                        random_state=42,
-                                        max_depth=45,
-                                        min_samples_leaf=1,
-                                        n_estimators=100,
-                                        class_weight=None,
-                                        criterion='entropy',
-                                        max_features='auto',
-                                        min_samples_split=0.005
-                                        )
-random_forest.fit(X_train[train_test_features], y_train)
-random_forest_predictions = random_forest.predict(X_test[train_test_features])
+# random_forest = RandomForestClassifier(n_jobs=-1,
+#                                         random_state=42,
+#                                         max_depth=45,
+#                                         min_samples_leaf=1,
+#                                         n_estimators=100,
+#                                         class_weight=None,
+#                                         criterion='entropy',
+#                                         max_features='auto',
+#                                         min_samples_split=0.005
+#                                         )
+random_forest = RandomForestClassifier(n_jobs=-1, random_state=42, max_depth=45, min_samples_leaf=1, n_estimators=100)
+random_forest.fit(X_train[random_forest_features], y_train)
+random_forest_predictions = random_forest.predict(X_test[random_forest_features])
 print(classification_report(y_test, random_forest_predictions))
 
+weights = list(random_forest.feature_importances_)
+random_forest_weight = {train_test_features[i]: weights[i] for i in range(len(weights))}
+
+df_weight = pd.Series(random_forest_weight)
+print(df_weight.sort_values(ascending=False).plot(kind='barh', fontsize=4))
+
 # losing features was not the problem. what we have before is as good as it gets
+# stick with the previously tuned model and reduce the features
 
 # %%
+# what if only used the top three features
+'''
+top_4_features = sorted(random_forest_weight, reverse=True, key=lambda dict_key: abs(random_forest_weight[dict_key]))[:3]
+random_forest = RandomForestClassifier(n_jobs=-1, random_state=42, max_depth=45, min_samples_leaf=1, n_estimators=100)
+random_forest.fit(X_train[top_4_features], y_train)
+random_forest_predictions = random_forest.predict(X_test[top_4_features])
+print(classification_report(y_test, random_forest_predictions))
+
+weights = list(random_forest.feature_importances_)
+df_weight = pd.Series({train_test_features[i]: weights[i] for i in range(len(weights))})
+print(df_weight.sort_values(ascending=False).plot(kind='barh', fontsize=4))
+'''
+
+# %%
+# random_forest_features.append('malicious')
+df[random_forest_features].to_pickle('resources/df_final.pickle')
+
+# %%
+with open('resources/random_forest_final.pickle', 'wb') as f:
+    pickle.dump(random_forest, f)
