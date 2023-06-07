@@ -38,4 +38,4 @@ Using machine learning to identify potential malware hostnames.
 ## References
 - StevenBlack hosts file to blacklist malicious websites - https://github.com/StevenBlack/hosts
 - Project on extracting features from URLs - https://github.com/lucasayres/url-feature-extractor
-- Calculating Shannon Entropy on hostnames - https://kldavenport.com/detecting-randomly-generated-domains/
+- Calculating Shannon Entropy on hostnames - https://web.archive.org/web/20210302232012/https://kldavenport.com/detecting-randomly-generated-domains/
